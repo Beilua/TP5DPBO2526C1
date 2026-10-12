@@ -630,8 +630,23 @@ public class PeopleMenu extends JFrame {
             return;
         }
 
+        // get id for WHERE clause (table holds DB truth, fallback to list)
+        String id = listPerson.get(selectedIndex).getId();
+        try {
+            Object idVal = personTable.getValueAt(selectedIndex, 1);
+            if (idVal != null) {
+                id = idVal.toString();
+            }
+        } catch (Exception ex) {
+            // keep list-based id
+        }
+
         // remove data from list
         listPerson.remove(selectedIndex);
+
+        // delete data from database
+        String sqlQuery = "DELETE FROM person WHERE id='" + id + "'";
+        database.insertUpdateDeleteQuery(sqlQuery);
 
         // refresh table
         personTable.setModel(setTable());
