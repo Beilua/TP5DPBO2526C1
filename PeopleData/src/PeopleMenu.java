@@ -1,5 +1,6 @@
 // imports for swing components
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicSliderUI;
 import javax.swing.table.DefaultTableModel;
 // import for layouts colors fonts
 import java.awt.*;
@@ -13,6 +14,8 @@ import java.time.Year;
 // imports for database
 import java.sql.ResultSet;
 import java.sql.SQLException;
+// import for custom font file
+import java.io.File;
 
 public class PeopleMenu extends JFrame {
 
@@ -39,15 +42,64 @@ public class PeopleMenu extends JFrame {
     private int selectedIndex = -1; // currently no row selected/add mode
     private Database database;
 
+    // theme palette
+    private static final Color CREAM = new Color(0xFCF0DA);
+    private static final Color OLIVE = new Color(0xAEAC78);
+    private static final Color MUSTARD = new Color(0xF2C46A);
+    private static final Color DARK = new Color(0x4C4541);
+    private static final Color SOFT_WHITE = new Color(0xFFFEF9);
+
+    // custom fonts
+    private static Font BASE_FONT;
+    private static Font TITLE_FONT;
+    private static Font BODY_FONT;
+    private static Font SMALL_FONT;
+
+    // function to load cute dino font
+    private static void loadCustomFont() {
+        try {
+            File f1 = new File("PeopleData/fonts/CuteDino.ttf");
+            File f2 = new File("fonts/CuteDino.ttf");
+            File f3 = new File("/home/beilua/IdeaProjects/TP5DPBO2526C1/PeopleData/fonts/CuteDino.ttf");
+            File fontFile = f1.exists() ? f1 : (f2.exists() ? f2 : f3);
+            BASE_FONT = Font.createFont(Font.TRUETYPE_FONT, fontFile);
+            GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(BASE_FONT);
+        } catch (Exception e) {
+            System.err.println("Custom font load failed, using SansSerif: " + e.getMessage());
+            BASE_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 14);
+        }
+        TITLE_FONT = BASE_FONT.deriveFont(Font.BOLD, 24f);
+        BODY_FONT = BASE_FONT.deriveFont(Font.PLAIN, 15f);
+        SMALL_FONT = BASE_FONT.deriveFont(Font.PLAIN, 13f);
+    }
+
     // main method
     public static void main(String[] args) {
+        // load cute dino font first
+        loadCustomFont();
+        // override default blue accents with brown palette
+        UIManager.put("ComboBox.selectionBackground", DARK);
+        UIManager.put("ComboBox.selectionForeground", CREAM);
+        UIManager.put("ComboBox.background", SOFT_WHITE);
+        UIManager.put("ComboBox.foreground", DARK);
+        UIManager.put("Slider.foreground", DARK);
+        UIManager.put("Slider.highlight", OLIVE);
+        UIManager.put("Slider.shadow", OLIVE);
+        UIManager.put("Slider.background", CREAM);
+        UIManager.put("RadioButton.select", DARK);
+        UIManager.put("RadioButton.background", CREAM);
+        UIManager.put("RadioButton.foreground", DARK);
+        UIManager.put("Table.selectionBackground", OLIVE);
+        UIManager.put("Table.selectionForeground", CREAM);
+        UIManager.put("TextField.selectionBackground", OLIVE);
+        UIManager.put("TextField.selectionForeground", DARK);
         SwingUtilities.invokeLater(() -> {
             // create window object
             PeopleMenu menu = new PeopleMenu();
 
             // set content pane and background
             menu.setContentPane(menu.mainPanel);
-            menu.getContentPane().setBackground(Color.WHITE);
+            menu.getContentPane().setBackground(CREAM);
 
             // set window title size and position
             menu.setTitle("Musician Data");
@@ -74,7 +126,8 @@ public class PeopleMenu extends JFrame {
         personTable.setModel(setTable());
 
         // change title styling
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 20f));
+        titleLabel.setFont(TITLE_FONT);
+        titleLabel.setForeground(DARK);
 
         // fill kategori combo box
         String[] kategoriData = {"Select Role", "Vocalist", "Guitarist", "Bassist", "Drummer", "Keyboardist", "DJ/Producer"};
@@ -196,15 +249,17 @@ public class PeopleMenu extends JFrame {
     private void buildManualUI() {
         // create main panel
         mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBackground(CREAM);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         // create title label
         titleLabel = new JLabel("Musician Data", SwingConstants.CENTER);
+        titleLabel.setForeground(DARK);
+        titleLabel.setFont(TITLE_FONT);
 
         // create form panel
         JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBackground(Color.WHITE);
+        formPanel.setBackground(CREAM);
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(4, 4, 4, 4);
         c.anchor = GridBagConstraints.WEST;
@@ -214,10 +269,15 @@ public class PeopleMenu extends JFrame {
         idField = new JTextField(20);
         namaField = new JTextField(20);
         tahunLahirField = new JTextField(20);
+        styleTextField(idField);
+        styleTextField(namaField);
+        styleTextField(tahunLahirField);
 
         // create combo boxes
         kategoriComboBox = new JComboBox<>();
         genreComboBox = new JComboBox<>();
+        styleComboBox(kategoriComboBox);
+        styleComboBox(genreComboBox);
 
         // create slider and value label
         popularitySlider = new JSlider();
@@ -227,22 +287,25 @@ public class PeopleMenu extends JFrame {
         soloRadioButton = new JRadioButton("Solo");
         duoRadioButton = new JRadioButton("Duo");
         bandRadioButton = new JRadioButton("Band");
-        soloRadioButton.setBackground(Color.WHITE);
-        duoRadioButton.setBackground(Color.WHITE);
-        bandRadioButton.setBackground(Color.WHITE);
+        styleRadioButton(soloRadioButton);
+        styleRadioButton(duoRadioButton);
+        styleRadioButton(bandRadioButton);
 
         // create tipe panel for radios
         JPanel tipePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        tipePanel.setBackground(Color.WHITE);
+        tipePanel.setBackground(CREAM);
         tipePanel.add(soloRadioButton);
         tipePanel.add(duoRadioButton);
         tipePanel.add(bandRadioButton);
 
         // create slider panel with value label
         JPanel sliderPanel = new JPanel(new BorderLayout(8, 0));
-        sliderPanel.setBackground(Color.WHITE);
+        sliderPanel.setBackground(CREAM);
         sliderPanel.add(popularitySlider, BorderLayout.CENTER);
         sliderPanel.add(popularityValueLabel, BorderLayout.EAST);
+        styleSlider(popularitySlider);
+        popularityValueLabel.setForeground(DARK);
+        popularityValueLabel.setFont(BODY_FONT);
 
         // define labels and fields arrays
         String[] labels = {"ID", "Name", "Birth Year", "Category (Role)", "Genre", "Popularity", "Type"};
@@ -250,10 +313,13 @@ public class PeopleMenu extends JFrame {
 
         // add each label and field to form
         for (int i = 0; i < labels.length; i++) {
+            JLabel lbl = new JLabel(labels[i]);
+            lbl.setForeground(DARK);
+            lbl.setFont(BODY_FONT);
             c.gridx = 0;
             c.gridy = i;
             c.weightx = 0.25;
-            formPanel.add(new JLabel(labels[i]), c);
+            formPanel.add(lbl, c);
             c.gridx = 1;
             c.weightx = 0.75;
             formPanel.add(fields[i], c);
@@ -263,11 +329,23 @@ public class PeopleMenu extends JFrame {
         addUpdateButton = new JButton("Add");
         cancelButton = new JButton("Cancel");
         deleteButton = new JButton("Delete");
+        addUpdateButton.setBackground(MUSTARD);
+        addUpdateButton.setForeground(DARK);
+        addUpdateButton.setFocusPainted(false);
+        addUpdateButton.setFont(BODY_FONT);
+        cancelButton.setBackground(OLIVE);
+        cancelButton.setForeground(DARK);
+        cancelButton.setFocusPainted(false);
+        cancelButton.setFont(BODY_FONT);
+        deleteButton.setBackground(DARK);
+        deleteButton.setForeground(CREAM);
+        deleteButton.setFocusPainted(false);
+        deleteButton.setFont(BODY_FONT);
 
         // create button panel
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(CREAM);
         buttonPanel.add(addUpdateButton);
         buttonPanel.add(Box.createVerticalStrut(8));
         buttonPanel.add(cancelButton);
@@ -276,13 +354,25 @@ public class PeopleMenu extends JFrame {
 
         // create top panel for form and buttons
         JPanel topPanel = new JPanel(new BorderLayout(10, 10));
-        topPanel.setBackground(Color.WHITE);
+        topPanel.setBackground(CREAM);
         topPanel.add(formPanel, BorderLayout.CENTER);
         topPanel.add(buttonPanel, BorderLayout.EAST);
 
         // create table with scroll pane
         personTable = new JTable();
+        personTable.setBackground(SOFT_WHITE);
+        personTable.setForeground(DARK);
+        personTable.setSelectionBackground(OLIVE);
+        personTable.setSelectionForeground(CREAM);
+        personTable.setGridColor(OLIVE);
+        personTable.setFont(SMALL_FONT);
+        personTable.setRowHeight(22);
+        personTable.getTableHeader().setBackground(DARK);
+        personTable.getTableHeader().setForeground(CREAM);
+        personTable.getTableHeader().setFont(BODY_FONT);
         JScrollPane scrollPane = new JScrollPane(personTable);
+        scrollPane.getViewport().setBackground(SOFT_WHITE);
+        scrollPane.setBackground(SOFT_WHITE);
 
         // add all panels to main panel
         mainPanel.add(titleLabel, BorderLayout.NORTH);
@@ -291,6 +381,128 @@ public class PeopleMenu extends JFrame {
 
         // set table area height
         scrollPane.setPreferredSize(new Dimension(700, 250));
+    }
+
+    // function to style text fields with soft white
+    private void styleTextField(JTextField field) {
+        field.setBackground(SOFT_WHITE);
+        field.setForeground(DARK);
+        field.setCaretColor(DARK);
+        field.setFont(BODY_FONT);
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(OLIVE, 1),
+                BorderFactory.createEmptyBorder(2, 6, 2, 6)));
+    }
+
+    // function to style combo boxes with brown accents
+    private void styleComboBox(JComboBox<String> combo) {
+        combo.setBackground(SOFT_WHITE);
+        combo.setForeground(DARK);
+        combo.setFont(BODY_FONT);
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setFont(BODY_FONT);
+                if (isSelected) {
+                    setBackground(DARK);
+                    setForeground(CREAM);
+                } else {
+                    setBackground(SOFT_WHITE);
+                    setForeground(DARK);
+                }
+                return this;
+            }
+        });
+    }
+
+    // function to style slider with brown track and thumb
+    private void styleSlider(JSlider slider) {
+        slider.setBackground(CREAM);
+        slider.setForeground(DARK);
+        slider.setFont(SMALL_FONT);
+        slider.setUI(new BasicSliderUI(slider) {
+            @Override
+            public void paintTrack(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int cy = trackRect.y + trackRect.height / 2 - 2;
+                g2.setColor(SOFT_WHITE);
+                g2.fillRect(trackRect.x, cy, trackRect.width, 4);
+                g2.setColor(OLIVE);
+                g2.fillRect(trackRect.x, cy, thumbRect.x + thumbRect.width / 2 - trackRect.x, 4);
+                g2.setColor(DARK);
+                g2.drawRect(trackRect.x, cy, trackRect.width - 1, 3);
+                g2.dispose();
+            }
+
+            @Override
+            public void paintThumb(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(MUSTARD);
+                g2.fillRoundRect(thumbRect.x, thumbRect.y, thumbRect.width, thumbRect.height, 6, 6);
+                g2.setColor(DARK);
+                g2.drawRoundRect(thumbRect.x, thumbRect.y, thumbRect.width - 1, thumbRect.height - 1, 6, 6);
+                g2.dispose();
+            }
+        });
+    }
+
+    // function to style radio buttons with brown dot
+    private void styleRadioButton(JRadioButton rb) {
+        rb.setBackground(CREAM);
+        rb.setForeground(DARK);
+        rb.setFont(BODY_FONT);
+        int size = 16;
+        Icon unselected = new Icon() {
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(SOFT_WHITE);
+                g2.fillOval(x, y, size, size);
+                g2.setColor(OLIVE);
+                g2.drawOval(x, y, size, size);
+                g2.dispose();
+            }
+
+            @Override
+            public int getIconWidth() {
+                return size;
+            }
+
+            @Override
+            public int getIconHeight() {
+                return size;
+            }
+        };
+        Icon selected = new Icon() {
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(SOFT_WHITE);
+                g2.fillOval(x, y, size, size);
+                g2.setColor(DARK);
+                g2.drawOval(x, y, size, size);
+                g2.setColor(DARK);
+                g2.fillOval(x + 4, y + 4, size - 8, size - 8);
+                g2.dispose();
+            }
+
+            @Override
+            public int getIconWidth() {
+                return size;
+            }
+
+            @Override
+            public int getIconHeight() {
+                return size;
+            }
+        };
+        rb.setIcon(unselected);
+        rb.setSelectedIcon(selected);
     }
 
     // function to create table model
