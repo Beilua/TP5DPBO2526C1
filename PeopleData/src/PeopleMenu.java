@@ -8,8 +8,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-// import for dynamic array
-import java.util.ArrayList;
 // import for current year
 import java.time.Year;
 // imports for database
@@ -37,8 +35,7 @@ public class PeopleMenu extends JFrame {
     private JButton deleteButton;
     private JButton cancelButton;
 
-    // data list and selected index
-    ArrayList<Person> listPerson;
+    // selected index and database
     private int selectedIndex = -1; // currently no row selected/add mode
     private Database database;
 
@@ -70,14 +67,10 @@ public class PeopleMenu extends JFrame {
         // build manual ui for plain javac run
         buildManualUI();
 
-        // initialize person list
-        listPerson = new ArrayList<>();
+        // initialize database
         database = new Database();
 
-        // fill list with dummy data
-        populateList();
-
-        // fill table with list data
+        // fill table with database data
         personTable.setModel(setTable());
 
         // change title styling
@@ -300,24 +293,6 @@ public class PeopleMenu extends JFrame {
         scrollPane.setPreferredSize(new Dimension(700, 250));
     }
 
-    // function to fill list with dummy data
-    private void populateList() {
-        // add dummy musicians data
-        listPerson.add(new Person("MUS001", "Han Jisung", 2000, "Vocalist", "K-Pop", 93, "Band"));
-        listPerson.add(new Person("MUS002", "Gaon", 2002, "Guitarist", "Rock", 82, "Band"));
-        listPerson.add(new Person("MUS003", "Sabrina Carpenter", 1999, "Vocalist", "Pop", 95, "Solo"));
-        listPerson.add(new Person("MUS004", "Gerard Way", 1977, "Vocalist", "Rock", 90, "Band"));
-        listPerson.add(new Person("MUS005", "Taka Moriuchi", 1988, "Vocalist", "Rock", 88, "Band"));
-        listPerson.add(new Person("MUS006", "Lee Suhyun", 1999, "Vocalist", "K-Pop", 86, "Duo"));
-        listPerson.add(new Person("MUS007", "Wendy", 1994, "Vocalist", "K-Pop", 89, "Band"));
-        listPerson.add(new Person("MUS008", "IU", 1993, "Vocalist", "K-Pop", 97, "Solo"));
-        listPerson.add(new Person("MUS009", "Gunil", 1998, "Drummer", "Rock", 78, "Band"));
-        listPerson.add(new Person("MUS010", "Dongmyeong", 2000, "Keyboardist", "Rock", 75, "Band"));
-
-        // reset selected index
-        selectedIndex = -1;
-    }
-
     // function to create table model
     public final DefaultTableModel setTable() {
         // define table columns
@@ -407,13 +382,15 @@ public class PeopleMenu extends JFrame {
             return;
         }
 
-        // validate duplicate id
-        for (int i = 0; i < listPerson.size(); i++) {
-            // compare id case insensitive
-            if (listPerson.get(i).getId().equalsIgnoreCase(id)) {
+        // validate duplicate id via database
+        try {
+            ResultSet rs = database.selectQuery("SELECT id FROM person WHERE id='" + id + "'");
+            if (rs.next()) {
                 JOptionPane.showMessageDialog(null, "ID already exists! Use another ID.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
 
         // validate nama length
@@ -470,11 +447,8 @@ public class PeopleMenu extends JFrame {
             return;
         }
 
-        // add data to list
-        listPerson.add(new Person(id, nama, tahunLahir, kategori, genre, popularitas, tipe));
-
         // tambahkan data ke database
-        String sqlQuery = "INSERT INTO person VALUES('" + id + "', '" + nama + "', '" + tahunLahir + "', '" + kategori + "', '" + genre + "', '" + popularitas + "', '" + tipe + "')";
+        String sqlQuery = "INSERT INTO person VALUES('" + id + "', '" + nama.replace("'", "''") + "', '" + tahunLahir + "', '" + kategori + "', '" + genre + "', '" + popularitas + "', '" + tipe + "')";
         database.insertUpdateDeleteQuery(sqlQuery);
 
         // refresh table
@@ -491,10 +465,13 @@ public class PeopleMenu extends JFrame {
     // function to update selected data
     public void updateData() {
         // check if data is selected
-        if (selectedIndex < 0 || selectedIndex >= listPerson.size()) {
+        if (selectedIndex < 0 || selectedIndex >= personTable.getRowCount()) {
             JOptionPane.showMessageDialog(null, "Select the data you want to update.");
             return;
         }
+
+        // get old id for WHERE clause (table holds DB truth)
+        String oldId = personTable.getValueAt(selectedIndex, 1).toString();
 
         // get values from form
         String id = idField.getText().trim();
@@ -519,16 +496,16 @@ public class PeopleMenu extends JFrame {
             return;
         }
 
-        // validate duplicate id
-        for (int i = 0; i < listPerson.size(); i++) {
-            // skip current row on update
-            if (i == selectedIndex) {
-                continue;
-            }
-            // compare id case insensitive
-            if (listPerson.get(i).getId().equalsIgnoreCase(id)) {
-                JOptionPane.showMessageDialog(null, "ID already exists! Use another ID.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
+        // validate duplicate id via database (skip if unchanged)
+        if (!id.equalsIgnoreCase(oldId)) {
+            try {
+                ResultSet rs = database.selectQuery("SELECT id FROM person WHERE id='" + id + "'");
+                if (rs.next()) {
+                    JOptionPane.showMessageDialog(null, "ID already exists! Use another ID.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         }
 
@@ -586,27 +563,6 @@ public class PeopleMenu extends JFrame {
             return;
         }
 
-        // update data in list
-        // get old id for WHERE clause (table holds DB truth, fallback to list)
-        String oldId = listPerson.get(selectedIndex).getId();
-        try {
-            Object idVal = personTable.getValueAt(selectedIndex, 1);
-            if (idVal != null) {
-                oldId = idVal.toString();
-            }
-        } catch (Exception ex) {
-            // keep list-based oldId
-        }
-
-        Person p = listPerson.get(selectedIndex);
-        p.setId(id);
-        p.setNama(nama);
-        p.setTahunLahir(tahunLahir);
-        p.setKategori(kategori);
-        p.setGenre(genre);
-        p.setPopularitas(popularitas);
-        p.setTipe(tipe);
-
         // update data in database
         String sqlQuery = "UPDATE person SET id='" + id + "', nama='" + nama.replace("'", "''") + "', tahun_lahir='" + tahunLahir + "', kategori='" + kategori + "', genre='" + genre + "', popularitas='" + popularitas + "', tipe='" + tipe + "' WHERE id='" + oldId + "'";
         database.insertUpdateDeleteQuery(sqlQuery);
@@ -625,24 +581,13 @@ public class PeopleMenu extends JFrame {
     // function to delete selected data
     public void deleteData() {
         // check if data is selected
-        if (selectedIndex < 0 || selectedIndex >= listPerson.size()) {
+        if (selectedIndex < 0 || selectedIndex >= personTable.getRowCount()) {
             JOptionPane.showMessageDialog(null, "Select the data you want to delete.");
             return;
         }
 
-        // get id for WHERE clause (table holds DB truth, fallback to list)
-        String id = listPerson.get(selectedIndex).getId();
-        try {
-            Object idVal = personTable.getValueAt(selectedIndex, 1);
-            if (idVal != null) {
-                id = idVal.toString();
-            }
-        } catch (Exception ex) {
-            // keep list-based id
-        }
-
-        // remove data from list
-        listPerson.remove(selectedIndex);
+        // get id for WHERE clause (table holds DB truth)
+        String id = personTable.getValueAt(selectedIndex, 1).toString();
 
         // delete data from database
         String sqlQuery = "DELETE FROM person WHERE id='" + id + "'";
