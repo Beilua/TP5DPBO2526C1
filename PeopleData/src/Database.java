@@ -17,7 +17,7 @@ public class Database {
         }
     }
 
-    // digunakan untuk SELECT
+    // function for SELECT query
     public ResultSet selectQuery(String sql) {
         try {
             statement.executeQuery(sql);
@@ -27,7 +27,7 @@ public class Database {
         }
     }
 
-    // digunakan untuk UPDATE, INSERT, DELETE
+    // function for INSERT, UPDATE, DELETE query
     public int insertUpdateDeleteQuery(String sql) {
         try {
             return statement.executeUpdate(sql);
@@ -36,7 +36,7 @@ public class Database {
         }
     }
 
-    // getter
+    // getter for statement
     public Statement getStatement() {
         return statement;
     }
