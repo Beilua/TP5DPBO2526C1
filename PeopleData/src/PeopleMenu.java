@@ -587,6 +587,17 @@ public class PeopleMenu extends JFrame {
         }
 
         // update data in list
+        // get old id for WHERE clause (table holds DB truth, fallback to list)
+        String oldId = listPerson.get(selectedIndex).getId();
+        try {
+            Object idVal = personTable.getValueAt(selectedIndex, 1);
+            if (idVal != null) {
+                oldId = idVal.toString();
+            }
+        } catch (Exception ex) {
+            // keep list-based oldId
+        }
+
         Person p = listPerson.get(selectedIndex);
         p.setId(id);
         p.setNama(nama);
@@ -595,6 +606,10 @@ public class PeopleMenu extends JFrame {
         p.setGenre(genre);
         p.setPopularitas(popularitas);
         p.setTipe(tipe);
+
+        // update data in database
+        String sqlQuery = "UPDATE person SET id='" + id + "', nama='" + nama.replace("'", "''") + "', tahun_lahir='" + tahunLahir + "', kategori='" + kategori + "', genre='" + genre + "', popularitas='" + popularitas + "', tipe='" + tipe + "' WHERE id='" + oldId + "'";
+        database.insertUpdateDeleteQuery(sqlQuery);
 
         // refresh table
         personTable.setModel(setTable());
